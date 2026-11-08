@@ -29,7 +29,7 @@ export default class ClaudeQuery extends View {
 
   // Web links go to the browser; a link in a conversation is never opened as a local file.
   link(url) {
-    if (/^https?:/i.test(url)) exec(window().platform === "macos" ? "open" : "xdg-open", [url]).catch(() => null);
+    if (/^https?:/i.test(url)) exec(window()?.platform === "macos" ? "open" : "xdg-open", [url]).catch(() => null);
   }
 
   render(cx) {
