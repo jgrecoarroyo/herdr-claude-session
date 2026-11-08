@@ -167,7 +167,6 @@ export default class Session extends View {
           // in the selected-row gray.
           return h_flex().id(`q-${q.n}`).flex_none().px(6).py(5).gap(7).items_start().rounded(7).cursor_pointer().line_height(1.25)
             .when(on, (e) => e.bg(t.raised)).hover((s) => s.bg(t.raised)).on_click((_e, cx) => this.open(q.n, cx))
-            .child(div().w(22).flex_none().pt(1).text_size(10.5).text_color(on ? RUNNING : t.dim).child(`#${q.n}`))
             .child(v_flex().flex_1().min_w(0).gap(2)
               .child(div().text_size(12).line_height(1.25).truncate().child(q.text.split("\n")[0]))
               .child(h_flex().gap(8).justify_between().text_size(10.5).line_height(1.25).text_color(on ? RUNNING : t.dim)

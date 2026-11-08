@@ -18,7 +18,7 @@ Two sidebar sections and a page for the Claude Code conversation in the focused 
 
 - The same 41 px header, reading "Session".
 - **Context:** the same head, a 7 px bar that fills white (`#dbdbdb`, `foreground` in light themes), `#f0883e` from 50% and `#e5484d` from 80%, and an 11 px `dim` line: "Opus 5.5 · 372k / 1M · $3.42", plus "2× compacted" when it applies.
-- **Queries:** an 11 px semibold `muted` title with the count on the right in `dim`, then a scrolling list, newest first. Each row has radius 7 and 5/6 px padding: "#12" in a 22 px column at 10.5 px, the first line of the prompt at 12 px truncated, and under it at 10.5 px the time on the left and "3m · ↓41k · 17 tools" on the right.
+- **Queries:** an 11 px semibold `muted` title with the count on the right in `dim`, then a scrolling list, newest first. Each row has radius 7 and 5/6 px padding: the first line of the prompt at 12 px truncated, and under it at 10.5 px the time on the left and "3m · ↓41k · 17 tools" on the right.
 - **Status:** a 22 px line at the bottom in the mono font: a spinning "✻" and Claude's word in `#e8a04a` at 12.5 px, with elapsed time and tokens at 10.5 px `dim`, shortened with "…" when narrow.
 
 **A query page**, a pane on the terminal's right on the theme's `background`, centered to at most 860 px, in the mono font:
