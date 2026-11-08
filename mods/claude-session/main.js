@@ -146,7 +146,7 @@ export default class Session extends View {
     const root = v_flex().id("session").size_full().min_h(0).bg(t.chrome).border_t(1).border_color(t.border)
       .on_size_change((size, cx) => { if (size.width !== this.width) { this.width = size.width; cx.notify(); } })
       .text_color(t.foreground).text_size(12.5).child(header);
-    if (block && folded(block)) return root;
+    if (block && folded(block) && !rail) return root; // the rail has no title to unfold it with
     if (rail) {
       const ctx = d?.context ?? {}, count = d?.prompts?.length;
       const tip = [d?.session?.model, ctx.size ? `${kfmt(ctx.used)} / ${kfmt(ctx.size)}` : null, d?.cost?.usd != null ? `$${d.cost.usd.toFixed(2)}` : null].filter(Boolean).join(" · ") || "No Claude Code session here";

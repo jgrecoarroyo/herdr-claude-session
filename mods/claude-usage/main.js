@@ -112,7 +112,7 @@ export default class Usage extends View {
     const root = v_flex().id("usage").size_full().min_h(0).bg(t.chrome).border_t(1).border_color(t.border)
       .on_size_change((size, cx) => { if (size.width !== this.width) { this.width = size.width; cx.notify(); } })
       .text_color(t.foreground).text_size(12.5).child(header);
-    if (block && folded(block)) return root;
+    if (block && folded(block) && !rail) return root; // the rail has no title to unfold it with
     const five = d.five_hour, week = d.seven_day;
     if (rail) {
       const dark = settings().dark !== false ? "#dbdbdb" : t.foreground;
