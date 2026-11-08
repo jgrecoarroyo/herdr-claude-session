@@ -2,9 +2,11 @@
 
 Two sidebar sections and a page for the Claude Code conversation in the focused terminal. **Usage** shows the account's 5-hour and weekly limits. **Session** shows context, model, cost, live status and every query sent. Clicking a query opens it in a pane beside the terminal as a timeline ending in Claude's answer. It reads local files only and uses no tokens.
 
+![Claude Code session](preview.png)
+
 ## What you see
 
-**Usage**, a block about 196 px tall in the sidebar, on the theme's `chrome` with a 1 px `border` line on top:
+**Usage**, a block 214 px tall in the sidebar, on the theme's `chrome` with a 1 px `border` line on top:
 
 - A 41 px header: "Usage", 11.5 px, medium, `dim`, 16 px from the left.
 - **Current** (the 5-hour window): label 14 px on the left, percentage 16 px on the right, both `foreground`. Below, a 7 px bar with radius 4 on a `raised` track, filled `#dbdbdb` in dark themes and `foreground` in light ones. Below that, 11.5 px: "Resets in 2h 17m" in `muted` on the left, the clock time in `dim` on the right ("13:09" today, else "Sat 14:00").
@@ -15,7 +17,7 @@ Two sidebar sections and a page for the Claude Code conversation in the focused 
 **Session**, a block below it taking the remaining height:
 
 - The same 41 px header, reading "Session".
-- **Context:** the same head, a 7 px bar filled `#e8693c`, and an 11 px `dim` line: "Opus 5.5 · 372k / 1M · $3.42", plus "2× compacted" when it applies.
+- **Context:** the same head, a 7 px bar that fills white (`#dbdbdb`, `foreground` in light themes), `#f0883e` from 50% and `#e5484d` from 80%, and an 11 px `dim` line: "Opus 5.5 · 372k / 1M · $3.42", plus "2× compacted" when it applies.
 - **Queries:** an 11 px semibold `muted` title with the count on the right in `dim`, then a scrolling list, newest first. Each row has radius 7 and 5/6 px padding: "#12" in a 22 px column at 10.5 px, the first line of the prompt at 12 px truncated, and under it at 10.5 px the time on the left and "3m · ↓41k · 17 tools" on the right.
 - **Status:** a 22 px line at the bottom in the mono font: a spinning "✻" and Claude's word in `#e8a04a` at 12.5 px, with elapsed time and tokens at 10.5 px `dim`, shortened with "…" when narrow.
 
@@ -41,7 +43,7 @@ Two sidebar sections and a page for the Claude Code conversation in the focused 
 ## Built from
 
 - **`mods/claude-usage`:** `main.js` and `usage.py`. Mod block in the sidebar column, optional prop `fold`.
-- **`mods/claude-session`:** `main.js`, `session.py` and `snapshot.py`. Mod block in the sidebar column, optional prop `fold`.
+- **`mods/claude-session`:** `main.js`, `session.py` and `snapshot.py`. Mod block in the sidebar column, optional props `fold` and `context` (`{warn, danger}`, percentages).
 - **`mods/claude-query`:** `main.js` and `exchange.js`. Opened with `pane.split {direction: "right", mod: "claude-query", props: {file}}`, never placed in a layout.
 - **`accordion.js`** in Usage and Session handles folding, using `layout.resize` and shared `sidebar.sections`, and draws the shipped `mods/workspace-chrome/chevron-*.svg`.
 - **Layout:** two blocks added to the column holding `spaces` and `agents`, in a clone of `main`.

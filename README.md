@@ -4,6 +4,8 @@ See your Claude Code conversation at a glance in [Herdr](https://herdr.dev)'s si
 context is, how close you are to your limits, and every query you sent. Click a query to read what
 Claude did and answered, without scrolling the terminal.
 
+![Usage and Session in the sidebar, with a query page open beside them](preview.png)
+
 It only reads files on your computer, so it uses no tokens and sends nothing anywhere.
 
 ## What you get
@@ -34,7 +36,7 @@ herdr-app do layout.clone '{"name":"main","as":"my-layout"}'
 In `~/.config/herdr-app/layouts/my-layout.json`, add these to the column that holds `spaces` and `agents`:
 
 ```json
-{ "id": "usage", "type": "block", "size": { "px": 196 }, "min": 42, "content": { "mod": "claude-usage" } },
+{ "id": "usage", "type": "block", "size": { "px": 214 }, "min": 42, "content": { "mod": "claude-usage" } },
 { "id": "session", "type": "block", "size": { "weight": 1.6 }, "min": 42, "content": { "mod": "claude-session" } }
 ```
 
@@ -61,6 +63,7 @@ The sections fill in after Claude's next reply.
 - **Local only:** it follows Claude Code running on this computer, not on other Herdr machines.
 - **Updates:** Session reads Claude Code's own session and transcript files, which aren't a documented format. A Claude Code update could break it.
 - **Privacy:** query pages and caches hold your conversation text. They're in `~/.cache/herdr-claude-session`, readable only by you.
+- **Context colors:** the bar is white, orange from 50% and red from 80%. To change that, add `"props": { "context": { "warn": 60, "danger": 90 } }` to the Session block's content.
 - **Folding (optional):** to fold a section by clicking its title, add its block id to the block's content: `"props": { "fold": "session" }`. It sizes sections with fixed heights, so it can disturb the sections around it.
 
 ## License

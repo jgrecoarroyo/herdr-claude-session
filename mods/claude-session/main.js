@@ -10,7 +10,15 @@ import { agents, focused, panes, exec, hc, run, theme, settings, props, setShare
 import { folded, toggle, chevron } from "./accordion.js";
 
 const DIR = () => `${appHome()}/mods/claude-session`;
-const COLORS = { five_hour: "#e8693c", seven_day: "#c5d36a", context: "#d97757", hot: "#e5534b" };
+const RUNNING = "#d97757";
+// The context bar: white, then orange from "warn"%, then red from "danger"%. A layout can change
+// them with the prop "context": { "warn": 50, "danger": 80 }.
+const contextColor = (pct, t) => {
+  const { warn = 50, danger = 80 } = props()?.context ?? {};
+  if (pct >= danger) return "#e5484d";
+  if (pct >= warn) return "#f0883e";
+  return settings().dark !== false ? "#dbdbdb" : t.foreground;
+};
 const SPINNER = ["✻", "✶", "✳", "✢", "·", "✢", "✳", "✶"];
 
 const kfmt = (n) => n == null ? "–" : n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n);
@@ -104,7 +112,7 @@ export default class Session extends View {
   bar(pct, color, p) {
     const fill = Math.max(0, Math.min(100, pct ?? 0));
     return div().w_full().h(7).flex_none().rounded(4).bg(p.track).overflow_hidden()
-      .child(div().h_full().w(`${fill}%`).min_w(fill > 0 ? 7 : 0).rounded(4).bg(fill >= 90 ? COLORS.hot : color));
+      .child(div().h_full().w(`${fill}%`).min_w(fill > 0 ? 7 : 0).rounded(4).bg(color));
   }
 
   // The label on the left, the percentage on the right (as in the Usage section).
@@ -144,7 +152,7 @@ export default class Session extends View {
     return root.child(body
       .child(v_flex().flex_none().gap(5).px(6)
         .child(this.head("Context", ctx.pct, p))
-        .child(this.bar(ctx.pct, COLORS.five_hour, p))
+        .child(this.bar(ctx.pct, contextColor(ctx.pct ?? 0, t), p))
         .child(div().text_size(11).text_color(t.dim).truncate().child(meta)))
       .child(h_flex().flex_none().pt(4).px(6).items_center().justify_between().text_size(11).font_semibold().text_color(t.muted)
         .child(div().child("Queries")).child(div().font_normal().text_color(t.dim).child(String(prompts.length))))
@@ -159,10 +167,10 @@ export default class Session extends View {
           // in the selected-row gray.
           return h_flex().id(`q-${q.n}`).flex_none().px(6).py(5).gap(7).items_start().rounded(7).cursor_pointer().line_height(1.25)
             .when(on, (e) => e.bg(t.raised)).hover((s) => s.bg(t.raised)).on_click((_e, cx) => this.open(q.n, cx))
-            .child(div().w(22).flex_none().pt(1).text_size(10.5).text_color(on ? COLORS.context : t.dim).child(`#${q.n}`))
+            .child(div().w(22).flex_none().pt(1).text_size(10.5).text_color(on ? RUNNING : t.dim).child(`#${q.n}`))
             .child(v_flex().flex_1().min_w(0).gap(2)
               .child(div().text_size(12).line_height(1.25).truncate().child(q.text.split("\n")[0]))
-              .child(h_flex().gap(8).justify_between().text_size(10.5).line_height(1.25).text_color(on ? COLORS.context : t.dim)
+              .child(h_flex().gap(8).justify_between().text_size(10.5).line_height(1.25).text_color(on ? RUNNING : t.dim)
                 .child(div().flex_none().child(running ? "working" : clock(q.at)))
                 .child(div().min_w(0).truncate().child(stats))));
         })))
