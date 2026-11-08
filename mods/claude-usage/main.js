@@ -13,6 +13,7 @@ const until = (epoch) => {
   const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
   return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`;
 };
+const RAIL = 160; // px: narrower than this, the sidebar is collapsed
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const hhmm = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 // When a limit resets, on your clock: "13:09" today, else "Sat 14:00".
@@ -89,17 +90,38 @@ export default class Usage extends View {
         .child(div().text_color(p.t.dim).child(at(lim.resets_at))));
   }
 
+  // The collapsed sidebar: a bar of five segments (each 20%), the number, and its label, stacked. Details are in the tooltip.
+  railGauge(id, label, pct, color, tip, p) {
+    const fill = Math.max(0, Math.min(100, pct ?? 0));
+    return v_flex().id(id).w_full().flex_none().items_center().gap(5).tooltip(tip)
+      .child(h_flex().gap(1).flex_none().children([0, 1, 2, 3, 4].map((i) => div().w(5).h(4).flex_none().rounded(1)
+        .bg(i < Math.ceil(fill / 20) ? (fill >= 90 ? "#e5484d" : color) : p.track))))
+      .child(v_flex().items_center()
+        .child(div().text_size(13).line_height(1.15).font_bold().text_color(p.t.foreground).child(pct == null ? "–" : `${pct}%`))
+        .child(div().text_size(11).line_height(1.15).text_color(p.t.muted).child(label)));
+  }
+
   render(cx) {
-    const p = this.palette(), t = p.t, d = this.data ?? {};
+    const p = this.palette(), t = p.t, d = this.data ?? {}, rail = (this.width ?? Infinity) < RAIL;
+    const sized = (el) => el.on_size_change((size, cx) => { if (size.width !== this.width) { this.width = size.width; cx.notify(); } });
     const block = props()?.fold; // optional: this block's id in the layout, to fold it
-    const header = h_flex().px(16).h(41).flex_none().items_center()
+    const header = h_flex().px(rail ? 8 : 16).h(41).flex_none().items_center()
       .child(h_flex().id("usage-title").gap(5).items_center().text_size(11.5).font_medium().text_color(t.dim).child("Usage")
         .when(Boolean(block), (e) => e.cursor_pointer().hover((s) => s.text_color(t.foreground))
           .on_click(() => toggle(block, 42)).child(chevron(block, t.dim))));
     const root = v_flex().id("usage").size_full().min_h(0).bg(t.chrome).border_t(1).border_color(t.border)
+      .on_size_change((size, cx) => { if (size.width !== this.width) { this.width = size.width; cx.notify(); } })
       .text_color(t.foreground).text_size(12.5).child(header);
     if (block && folded(block)) return root;
     const five = d.five_hour, week = d.seven_day;
+    if (rail) {
+      const dark = settings().dark !== false ? "#dbdbdb" : t.foreground;
+      const tip = (name, lim) => (lim ? `${name}: ${lim.past ? `reset at ${at(lim.resets_at)}` : `resets in ${until(lim.resets_at)}, ${at(lim.resets_at)}`}` : `${name}: no data yet`);
+      // No title here: at this width there's no room for it, and the labels say what each one is.
+      return sized(v_flex().id("usage").size_full().min_h(0).bg(t.chrome).border_t(1).border_color(t.border).text_color(t.foreground)).child(v_flex().flex_1().min_h(0).pt(12).gap(20)
+        .child(this.railGauge("rail-5h", "5h", five?.used_percentage, dark, tip("Current", five), p))
+        .child(this.railGauge("rail-7d", "7d", week?.used_percentage, COLORS.seven_day, tip("Weekly", week), p)));
+    }
     return root.child(v_flex().flex_1().min_h(0).px(10).pt(6).pb(8).gap(12)
       .when(Boolean(five), (e) => e.child(this.limit("limit-5h", five, "Current", settings().dark !== false ? "#dbdbdb" : t.foreground, p)))
       .when(Boolean(week), (e) => e.child(this.limit("limit-week", week, "Weekly", COLORS.seven_day, p, true)))

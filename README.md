@@ -58,6 +58,7 @@ The sections fill in after Claude's next reply.
 
 ## Good to know
 
+- **Collapsed sidebar:** under 160 px, Usage and Session shrink to a small stack for each number: a five-segment bar, the percentage and a label (`5h`, `7d`, `ctx`). Hover one for the details.
 - **Limits:** Claude Code only reports them for Pro, Max and Ultra subscribers, or behind a Claude apps gateway with a spend limit. Otherwise Usage stays empty.
 - **Platforms:** tested on macOS. Linux should work but hasn't been tested. Windows isn't supported.
 - **Local only:** it follows Claude Code running on this computer, not on other Herdr machines.

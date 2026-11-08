@@ -27,6 +27,8 @@ Two sidebar sections and a page for the Claude Code conversation in the focused 
 - "ALONG THE WAY" at 10.5 px with a rule, then a timeline with a 2 px `border` line: the time, Claude's comment in 12.5 px `muted`, and its actions at 11.5 px `dim`, each after a `#d97757` "▸".
 - "ANSWER" with a rule, then the answer as rendered Markdown at 13.5 px.
 
+**When the sidebar is narrower than 160 px** (Herdr collapses it to 44 px), both sections drop their titles, bars and query rows. Each number is a centered stack: five segments, each 5×4 px and 20% of the range, lit as soon as that stretch is in use, in the bar's color or `#e5484d` from 90%; 5 px below, the percentage at 13 px bold, with its label right under it at 11 px `muted` (`5h`, `7d`, `ctx`). 20 px separates the stacks. Session adds the query count, labeled `qs`, and a status at the bottom: the spinning "✻" in `#e8a04a` while working, "!" when blocked, "·" otherwise. Tooltips hold the details.
+
 ## How it behaves
 
 - **Which conversation:** the Claude Code agent in the focused terminal, else the one shown last, else any in the focused space. Agents on other machines are skipped. Usage isn't tied to a terminal: limits are per account, so it reads the newest snapshot of any session.
