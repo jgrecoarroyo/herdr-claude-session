@@ -1,8 +1,8 @@
-# Claude Code session
+# Claude Code Usage & History
 
 Two sidebar sections and a page for the Claude Code conversation in the focused terminal. **Usage** shows the account's 5-hour and weekly limits. **Session** shows context, model, cost, live status and every query sent. Clicking a query opens it in a pane beside the terminal as a timeline ending in Claude's answer. It reads local files only and uses no tokens.
 
-![Claude Code session](preview.png)
+![Claude Code Usage & History](preview.png)
 
 ## What you see
 
@@ -10,7 +10,7 @@ Two sidebar sections and a page for the Claude Code conversation in the focused 
 
 - A 41 px header: "Usage", 11.5 px, medium, `dim`, 16 px from the left.
 - **Current** (the 5-hour window): label 14 px on the left, percentage 16 px on the right, both `foreground`. Below, a 7 px bar with radius 4 on a `raised` track, filled `#dbdbdb` in dark themes and `foreground` in light ones. Below that, 11.5 px: "Resets in 2h 17m" in `muted` on the left, the clock time in `dim` on the right ("13:09" today, else "Sat 14:00").
-- **Weekly** (the 7-day window): the same head and note, with 7 segments instead of a bar: 10 px tall, radius 3, 3 px apart, each with its day letter below at 9 px. The fill runs through them in `#c5d36a`. Today's segment has a `foreground` outline and letter. Fill past today is `#e3b341`.
+- **Weekly** (the 7-day window): the same head and note, with 7 segments instead of a bar: 10 px tall, radius 3, 3 px apart, each with its day letter below at 9 px. The fill runs through them in `#6cb6ff`. Today's segment has a `foreground` outline and letter. Fill past today is `#e3b341`.
 - Any bar at 90% or more fills `#e5534b`.
 - With no data: "Limits show after Claude's next reply." in 11 px `dim`.
 

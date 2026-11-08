@@ -6,7 +6,7 @@ import { exec, theme, settings, props, appHome } from "herdr";
 import { folded, toggle, chevron } from "./accordion.js";
 
 const DIR = () => `${appHome()}/mods/claude-usage`;
-const COLORS = { seven_day: "#c5d36a", hot: "#e5534b" };
+const COLORS = { seven_day: "#6cb6ff", hot: "#e5534b" };
 
 const until = (epoch) => {
   const s = Math.max(0, epoch - Date.now() / 1000);

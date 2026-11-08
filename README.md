@@ -1,4 +1,4 @@
-# Claude Code session for Herdr
+# Claude Code Usage & History for Herdr
 
 See your Claude Code conversation at a glance in [Herdr](https://herdr.dev)'s sidebar: how full the
 context is, how close you are to your limits, and every query you sent. Click a query to read what
