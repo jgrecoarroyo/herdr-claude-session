@@ -55,8 +55,8 @@ export default class Usage extends View {
 
   // The week as 7 days, one segment each, from 7 days before the reset. Usage fills them in order;
   // today's has a bright outline. Spending evenly, the fill ends inside today: past it (amber),
-  // you're ahead of an even share. Under each, the letter of the day it ends on (the week runs
-  // reset to reset, e.g. Fri 19:00 → Fri 19:00, so a segment spans two calendar days).
+  // you're ahead of an even share. The week runs reset to reset, e.g. Fri 19:00 → Fri 19:00, so a
+  // segment spans two calendar days: the letters count from today, so today's is always right.
   weekBar(pct, resetsAt, color, p) {
     const t = p.t, start = resetsAt - 7 * 86400;
     const today = Math.min(6, Math.max(0, Math.floor((Date.now() / 1000 - start) / 86400)));
@@ -67,7 +67,7 @@ export default class Usage extends View {
       return v_flex().flex_1().min_w(0).gap(3).items_center()
         .child(div().w_full().h(10).rounded(3).bg(p.track).border_1().border_color(i === today ? t.foreground : p.track).overflow_hidden()
           .child(div().h_full().w(`${Math.round(fill * 100)}%`).bg(ahead ? "#e3b341" : used >= 90 ? COLORS.hot : color)))
-        .child(div().text_size(9).text_color(i === today ? t.foreground : t.dim).child(DAYS[new Date((start + (i + 1) * 86400 - 1) * 1000).getDay()].slice(0, 1)));
+        .child(div().text_size(9).text_color(i === today ? t.foreground : t.dim).child(DAYS[new Date(Date.now() + (i - today) * 86400000).getDay()].slice(0, 1)));
     });
     return h_flex().w_full().gap(3).children(segs);
   }

@@ -10,7 +10,7 @@ Two sidebar sections and a page for the Claude Code conversation in the focused 
 
 - A 41 px header: "Usage", 11.5 px, medium, `dim`, 16 px from the left.
 - **Current** (the 5-hour window): label 14 px on the left, percentage 16 px on the right, both `foreground`. Below, a 7 px bar with radius 4 on a `raised` track, filled `#dbdbdb` in dark themes and `foreground` in light ones. Below that, 11.5 px: "Resets in 2h 17m" in `muted` on the left, the clock time in `dim` on the right ("13:09" today, else "Sat 14:00").
-- **Weekly** (the 7-day window): the same head and note, with 7 segments instead of a bar: 10 px tall, radius 3, 3 px apart, each with its day letter below at 9 px. The fill runs through them in `#6cb6ff`. Today's segment has a `foreground` outline and letter. Fill past today is `#e3b341`.
+- **Weekly** (the 7-day window): the same head and note, with 7 segments instead of a bar: 10 px tall, radius 3, 3 px apart, each with a day letter below at 9 px, counted from today, so today's segment always shows today's letter. The fill runs through them in `#6cb6ff`. Today's segment has a `foreground` outline and letter. Fill past today is `#e3b341`.
 - Any bar at 90% or more fills `#e5534b`.
 - With no data: "Limits show after Claude's next reply." in 11 px `dim`.
 
@@ -61,6 +61,7 @@ Two sidebar sections and a page for the Claude Code conversation in the focused 
 
 - `rate_limits` appears only for claude.ai Pro, Max and Ultra subscribers, or behind a Claude apps gateway with a spend limit, and only after the first reply. Claude Code drops a window once it has ended, so a saved snapshot can be older than the window.
 - The session files and transcript format are Claude Code's own and undocumented. Fields used include `origin.kind`, `turnPosition.promptIndex`, `isSidechain` and the `turn_duration` system record. Messages queued mid-turn don't appear as prompts.
+- A week runs reset to reset, so each segment spans two calendar days. Labeling a segment by the day it starts or ends on shows the wrong day for part of each day.
 - `snapshot.py` replaces any existing status line unless its command is passed as the argument.
 - GPUI quirks in Herdr: `on_size_change` works only on a mod's root, `v_virtual_list` rows didn't render, `TextView` ignores `text_color` and `text_size`, and negative margins are ignored.
 - Geist has no bold in Herdr, so labels stand out by size and color rather than weight.
