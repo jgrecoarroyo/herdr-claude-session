@@ -1,6 +1,6 @@
 # Claude Code Usage & History
 
-Two sidebar sections and a page for the Claude Code conversation in the focused terminal. **Usage** shows the account's 5-hour and weekly limits. **Session** shows the conversation's title, context, model, cost, Claude Code's own recap, live status and every query sent. Clicking a query opens it in a pane beside the terminal as a timeline ending in Claude's answer. It reads local files only and uses no tokens.
+Two sidebar sections and a page for the Claude Code conversation in the focused terminal. **Usage** shows the account's 5-hour and weekly limits. **Session** shows the conversation's title, context, model, cost, Claude Code's own recap, live status and every query sent. Clicking a query opens it in a pane beside the terminal as a timeline ending in Claude's answer. It reads local files only and uses no tokens; the only write is a new title when you rename the conversation.
 
 ![Claude Code Usage & History](preview.png)
 
@@ -16,8 +16,8 @@ Two sidebar sections and a page for the Claude Code conversation in the focused 
 
 **Session**, a block below it taking the remaining height:
 
-- The same 41 px header, reading "Session", with a ⋯ button at its right: three 3 px `dim` dots, 2 px apart, in a 24×22 px target that gets `hover` on hover. It opens a 180 px popup under its right edge with a checkbox row per part: Title, Context, Recap, Queries. Rows are 30 px, radius 7; a checked box is 15 px `accent` with radius 4 and the shipped `check.svg` in `accent_foreground`, an unchecked one a 1 px `input` outline.
-- **Title:** Claude Code's AI title for the conversation, 15 px semibold `foreground`, line height 1.3, wrapping, 8 px above Context.
+- The same 41 px header, reading "Session". At its right, the shown terminal's address (`t1z`) in the terminal font at 11 px `dim` with an 11 px copy icon, in a 22 px target with radius 6 that gets `hover` and `foreground` on hover; a click copies the address and the icon turns to a check ("Copied") for 1.5 s. Then a ⋯ button: three 3 px `dim` dots, 2 px apart, in a 24×22 px target that gets `hover` on hover. It opens a 180 px popup under its right edge with a checkbox row per part: Title, Context, Recap, Queries. Rows are 30 px, radius 7; a checked box is 15 px `accent` with radius 4 and the shipped `check.svg` in `accent_foreground`, an unchecked one a 1 px `input` outline.
+- **Title:** the name you gave the conversation, else Claude Code's AI title, else the session's name; 15 px semibold `foreground`, line height 1.3, wrapping, 8 px above Context. On hover it gets a `hover` background (radius 6, reaching 6 px past the text on each side), a text cursor and the tooltip "Click to rename".
 - **Context:** the same head, a 7 px bar that fills white (`#dbdbdb`, `foreground` in light themes), `#f0883e` from 50% and `#e5484d` from 80%, and an 11 px `dim` line: "Opus 5.5 · 372k / 1M · $3.42", plus "2× compacted" when it applies.
 - **Recap**, only when the conversation has one: a card on `raised`, radius 8, 8/10 px padding. Its top line at 11 px: a chevron, "Recap" semibold `muted`, then "· 8 d ago" and "· 29 queries since" in `dim`, the count in `#e8a04a` from 10. Below, the recap at 12 px `muted`, line height 1.45.
 - **Queries:** a chevron and an 11 px semibold `muted` title with the count on the right in `dim`, then a scrolling list, newest first. Each row has radius 7 and 5/6 px padding: the first line of the prompt at 12 px truncated, and under it at 10.5 px the time on the left and "3m · ↓41k · 17 tools" on the right.
@@ -42,6 +42,7 @@ Two sidebar sections and a page for the Claude Code conversation in the focused 
 - **Links on a page:** http and https links open in the browser. Other links do nothing.
 - **Limits that have ended:** the 5-hour window reads 0% and "Reset at 13:09". The weekly window reads 0% and moves on to its next week.
 - **Refresh:** Session every 3 s and its status every 1.5 s, Usage every 5 s, the "Resets in" text every minute.
+- **Renaming:** clicking the title swaps it for a 30 px text box in the same type, with a 1 px `accent` border on `background`, holding the title selected. Enter saves and puts the focus back in the terminal; clicking anywhere else saves; Esc leaves the title as it was. Spaces are collapsed and an empty or unchanged name saves nothing. The new name shows at once.
 - **⋯ menu:** each click shows or hides that part at once, and the menu stays open. The choice is in shared `claude-session.hide` (`{title, context, recap, queries}`, true when hidden), so it holds across restarts. With Queries hidden, the status line stays at the bottom.
 - **Recap and Queries fold** by clicking their heading line; each copy remembers which are open in `localStorage`.
 - **Folding, off by default:** with the prop `"fold": "<block id>"`, the title shows a chevron and clicking it folds the block to a 42 px header with `layout.resize`.
@@ -59,7 +60,7 @@ Two sidebar sections and a page for the Claude Code conversation in the focused 
 - **Programs:** `python3`, 3.9 or newer. `ps` on macOS, `/proc` on Linux. `open` or `xdg-open` for web links. `hc read` for the spinner word.
 - **Files read:**
   - `~/.claude/sessions/<pid>.json` for the session, matched through `HC_TERMINAL_ID` in the process's environment.
-  - The transcript JSONL under `~/.claude/projects/`, read from where the last run stopped: prompts, the `ai-title` record for the title, and the newest `away_summary` system record for the recap.
+  - The transcript JSONL under `~/.claude/projects/`, read from where the last run stopped: prompts, the `custom-title` record (the last one wins) or else the `ai-title` record for the title, and the newest `away_summary` system record for the recap.
   - `~/.cache/claude-statusline/<session>.json`, written by `snapshot.py`.
 - **Files written:** the snapshots, plus caches and pages in `~/.cache/herdr-claude-session`, all readable only by the user.
 - **Status line:** `~/.claude/settings.json` runs `snapshot.py`. With a command as its argument, it also runs that status line with the same input and shows its output.
@@ -69,6 +70,8 @@ Two sidebar sections and a page for the Claude Code conversation in the focused 
 - `rate_limits` appears only for claude.ai Pro, Max and Ultra subscribers, or behind a Claude apps gateway with a spend limit, and only after the first reply. Claude Code drops a window once it has ended, so a saved snapshot can be older than the window.
 - The session files and transcript format are Claude Code's own and undocumented. Fields used include `origin.kind`, `turnPosition.promptIndex`, `isSidechain` and the `turn_duration` system record. Messages queued mid-turn don't appear as prompts.
 - A week runs reset to reset, so each segment spans two calendar days. Labeling a segment by the day it starts or ends on shows the wrong day for part of each day.
+- The copy and check icons are in `icons.js` and written to `data/claude-session/icons/` at start: Herdr draws no image from a mod folder that's a link to a git clone.
+- Renaming writes what `/rename` writes: a `{"type":"custom-title","customTitle":…,"sessionId":…}` line appended to the transcript in one `write` (so it can't split a line Claude Code is writing), and `{"customTitle": …}` in `<transcript folder>/<session id>/custom-title.json`, which `/resume` reads. The running Claude Code keeps its old name in memory (its window title), and if it already had a name (from `/rename`, or resumed with one) it may write that old name again later, which then wins. `session.py <terminal> --rename TITLE` does it.
 - Claude Code writes a recap only when you come back to a session after a while, so many conversations have none, and it can be far behind. It ends some with "(disable recaps in /config)", which `session.py` drops.
 - Herdr's agent list can label a Claude Code terminal as a plain shell. Picking the conversation from that list showed another space's; `session.py` matches processes by `HC_TERMINAL_ID` instead, with a single `ps` for all of them.
 - `snapshot.py` replaces any existing status line unless its command is passed as the argument.
@@ -84,6 +87,8 @@ Two sidebar sections and a page for the Claude Code conversation in the focused 
 - Sending a prompt adds a row with "working" and the spinner word; when it finishes, the row shows its time, duration, tokens and tools.
 - Clicking a query opens its page on the right. Clicking another replaces it in the same pane.
 - `snapshot.py "<command>"` still shows that command's output.
+- Clicking the address in the header and pasting gives the focused terminal's address, the same one `hc ls` lists for it.
+- Clicking the title, typing a name and pressing Enter shows the new name at once, puts the focus back in the terminal, and `/resume` lists the conversation under it; Esc instead leaves the old name.
 - Moving focus to another terminal running Claude Code switches Session to that conversation, including its title and recap; moving to one without a recap shows none.
 - Focusing a terminal without Claude Code shows "No Claude Code conversation in this terminal.", not the previous conversation.
 - Unchecking a part in the ⋯ menu hides it at once, and it stays hidden after a restart.

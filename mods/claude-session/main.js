@@ -1,14 +1,17 @@
 // Session: the Claude Code conversation in the focused terminal, in the sidebar under Agents.
-//   - the conversation's title, then context, model and cost (the account's limits are in the Usage section);
+//   - in the header, the terminal's address (its HC_TERMINAL_ID, "t1z"), copied with a click;
+//   - the conversation's title (click it to rename the conversation, as /rename does), then
+//     context, model and cost (the account's limits are in the Usage section);
 //   - Claude Code's own recap (written when you come back to a session after a while), folding;
 //   - every query you sent, newest first, folding: click one to read it with its reply in the
 //     claude-query pane beside the terminal (Claude Code can't be scrolled from outside);
 //   - Claude's live status word ("✻ Divining…") while it works.
 // Data: session.py (the transcript + what snapshot.py, the status line, saves).
 import { View, div, svg } from "gpui-kit";
-import { v_flex, h_flex } from "gpui-base";
+import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { agents, focused, panes, spaces, exec, hc, run, theme, settings, props, shared, setShared, appHome, openOverlay } from "herdr";
 import { folded, toggle, chevron } from "./accordion.js";
+import { icon, writeIcons } from "./icons.js";
 
 const DIR = () => `${appHome()}/mods/claude-session`;
 const RUNNING = "#d97757";
@@ -46,9 +49,17 @@ const clock = (iso) => { const d = new Date(iso); return `${String(d.getHours())
 export default class Session extends View {
   init(_props, cx) {
     if (props()?.menu) return; // the ⋯ menu: draws only the checkboxes
+    cx.spawn(async (cx) => { try { await writeIcons(); cx.notify(); } catch {} });
     this.terminal = null; this.live = null;
     this.seen = {}; // terminal -> what session.py said about it last ({ none: true }: no Claude Code there)
     this.open_ = { recap: remembered("recap"), queries: remembered("queries") };
+    // Renaming: the title becomes a text box; Enter or a click elsewhere saves, Esc leaves it as it was.
+    this.editing = null; // { terminal, was } while the box shows
+    this.renamed = {}; // terminal -> the name just given, shown until session.py reads it back
+    this.handle = cx.focus_handle(); // the panel takes the focus on a click, so the box loses it
+    this.titleInput = InputState.new({ placeholder: "Name this conversation" });
+    this.titleInput.on("submit", (_e, cx) => this.saveTitle(cx, true));
+    this.titleInput.on("blur", (_e, cx) => this.saveTitle(cx, false));
     cx.timer.every(3000, (cx) => this.refresh(cx));
     // Focus moved: switch now rather than at the next refresh (no program runs for this check).
     cx.timer.every(300, (cx) => { if (this.target() !== this.terminal) this.refresh(cx); });
@@ -83,6 +94,7 @@ export default class Session extends View {
       try {
         const r = await exec("python3", [`${DIR()}/session.py`, terminal]);
         const d = JSON.parse(r.stdout);
+        if (this.renamed[terminal] && d.session?.title === this.renamed[terminal]) delete this.renamed[terminal];
         const changed = JSON.stringify(d) !== JSON.stringify(this.seen[terminal]);
         this.seen[terminal] = d; this.error = null;
         if (!d.none) this.shown = terminal;
@@ -134,6 +146,53 @@ export default class Session extends View {
     });
   }
 
+  editTitle(title, cx) {
+    this.editing = { terminal: this.terminal, was: title };
+    this.titleInput.set_value(title);
+    this.titleInput.set_selected_range({ start: 0, end: title.length });
+    this.titleInput.focus();
+    cx.notify();
+  }
+
+  // Enter (back) says to go back to the terminal; a click elsewhere has already put the focus there.
+  saveTitle(cx, back) {
+    const e = this.editing;
+    if (!e) return; // Enter already saved it, and the box losing the focus says so again
+    this.editing = null;
+    const title = this.titleInput.value().split(/\s+/).filter(Boolean).join(" ");
+    if (back) run("pane.focus", { terminal: e.terminal });
+    cx.notify();
+    if (!title || title === e.was) return;
+    this.renamed[e.terminal] = title;
+    cx.spawn(async (cx) => {
+      try {
+        const r = JSON.parse((await exec("python3", [`${DIR()}/session.py`, e.terminal, "--rename", title])).stdout);
+        if (r.error) throw new Error(r.error);
+      } catch { delete this.renamed[e.terminal]; cx.notify(); }
+    });
+  }
+
+  cancelTitle(cx) {
+    const e = this.editing;
+    this.editing = null;
+    if (e) run("pane.focus", { terminal: e.terminal });
+    cx.notify();
+  }
+
+  // The title, or the box renaming it.
+  titleView(title, t) {
+    const font = (el) => el.text_size(15).font_semibold().line_height(1.3);
+    if (this.editing?.terminal === this.terminal)
+      return div().id("session-name-edit").pb(8)
+        .on_key_down((e, cx) => { if (e.key === "escape") { cx.stop_propagation(); this.cancelTitle(cx); } })
+        .child(font(Input.new(this.titleInput)).h(30).mx(-6).px(6).rounded(6).border_1().border_color(t.accent).bg(t.background).text_color(t.foreground));
+    // Wrapping rather than cut short; the hover says it can be changed.
+    return font(div().id("session-name").mb(8).mx(-6).px(6).py(1).rounded(6).cursor_text().text_color(t.foreground))
+      .hover((s) => s.bg(t.hover)).tooltip("Click to rename")
+      .on_click((_e, cx) => this.editTitle(title, cx))
+      .child(title);
+  }
+
   flip(key, cx) {
     this.open_[key] = !this.open_[key];
     remember(key, this.open_[key]);
@@ -148,6 +207,24 @@ export default class Session extends View {
       .child(svg(`mods/workspace-chrome/chevron-${this.open_[key] ? "down" : "right"}.svg`).size(11).flex_none().text_color(t.dim))
       .child(div().flex_none().child(label))
       .child(div().flex_1().min_w(0).truncate().text_right().font_normal().text_color(t.dim).child(note));
+  }
+
+  // The terminal's address beside the ⋯ button, for `hc read t1z` and the like: a click copies it,
+  // and the icon turns to a check for a moment.
+  address(t) {
+    const terminal = this.terminal, done = this.copied === terminal;
+    return h_flex().id("session-address").h(22).px(6).gap(5).flex_none().items_center().rounded(6).cursor_pointer()
+      .text_size(11).text_color(done ? t.foreground : t.dim).font_family(settings().font_family ?? "JetBrains Mono")
+      .hover((s) => s.bg(t.hover).text_color(t.foreground)).tooltip(done ? "Copied" : "Copy the terminal's address")
+      .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+      .on_click((_e, cx) => {
+        cx.write_to_clipboard(terminal);
+        this.copied = terminal;
+        cx.notify();
+        cx.timer.after(1500, (cx) => { if (this.copied === terminal) { this.copied = null; cx.notify(); } });
+      })
+      .child(div().child(terminal))
+      .child(icon(done ? "check" : "copy").size(11).flex_none());
   }
 
   // The ⋯ button at the right of the header: three dots, opening the menu just below it.
@@ -231,8 +308,10 @@ export default class Session extends View {
       .child(h_flex().id("session-title").gap(5).items_center().text_size(11.5).font_medium().text_color(t.dim).child("Session")
         .when(Boolean(block), (e) => e.cursor_pointer().hover((s) => s.text_color(t.foreground))
           .on_click(() => toggle(block, 42)).child(chevron(block, t.dim))))
-      .when(!rail, (e) => e.child(this.dots(t)));
-    const root = v_flex().id("session").size_full().min_h(0).bg(t.chrome).border_t(1).border_color(t.border)
+      .when(!rail, (e) => e.child(h_flex().gap(2).items_center()
+        .when(Boolean(this.terminal), (e) => e.child(this.address(t)))
+        .child(this.dots(t))));
+    const root = v_flex().id("session").track_focus(this.handle).size_full().min_h(0).bg(t.chrome).border_t(1).border_color(t.border)
       .on_size_change((size, cx) => { if (size.width !== this.width) { this.width = size.width; cx.notify(); } })
       .text_color(t.foreground).text_size(12.5).child(header);
     if (block && folded(block) && !rail) return root; // the rail has no title to unfold it with
@@ -266,7 +345,7 @@ export default class Session extends View {
     const prompts = [...(d.prompts ?? [])].reverse();
     const working = a ? a.status === "working" : Boolean(this.live);
     const s = d.session ?? {};
-    const title = s.title ?? s.name;
+    const title = this.renamed[this.terminal] ?? s.title ?? s.name;
     const recap = d.recap;
     const meta = [s.model, ctx.size ? `${kfmt(ctx.used)} / ${kfmt(ctx.size)}` : null, d.cost?.usd != null ? `$${d.cost.usd.toFixed(2)}` : null,
       ctx.compactions ? `${ctx.compactions}× compacted` : null].filter(Boolean).join(" · ");
@@ -274,9 +353,8 @@ export default class Session extends View {
     const shown = Object.fromEntries(PARTS.map(([part]) => [part, showing(part)]));
     return root.child(body
       .when(shown.title || shown.context, (e) => e.child(v_flex().flex_none().gap(5).px(6)
-        // The conversation's name heads the panel, wrapping rather than cut short.
-        .when(Boolean(title) && shown.title, (e) => e.child(div().id("session-name").pb(8).text_size(15).font_semibold()
-          .line_height(1.3).text_color(t.foreground).child(title)))
+        // The conversation's name heads the panel.
+        .when(Boolean(title) && shown.title, (e) => e.child(this.titleView(title, t)))
         .when(shown.context, (e) => e
           .child(this.head("Context", ctx.pct, p))
           .child(this.bar(ctx.pct, contextColor(ctx.pct ?? 0, t), p))

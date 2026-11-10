@@ -7,12 +7,12 @@ terminal.
 
 ![Usage and Session in the sidebar, with a query page open beside them](preview.png)
 
-It only reads files on your computer, so it uses no tokens and sends nothing anywhere.
+It only reads files on your computer, so it uses no tokens and sends nothing anywhere. The one thing it writes to Claude Code's files is a new title, when you rename a conversation.
 
 ## What you get
 
 - **Usage:** your 5-hour and weekly limits, and when they reset. The weekly bar has a segment per day, so you can see if you're ahead of an even pace.
-- **Session:** the conversation's title, context, model and cost, Claude Code's recap, Claude's live status, and your queries, newest first, with time, duration, tokens and tools. The ⋯ menu shows or hides the title, context, recap and queries; the recap and queries also fold.
+- **Session:** the terminal's address (`t1z`, its `HC_TERMINAL_ID`) with a copy button, the conversation's title (click it to rename the conversation), context, model and cost, Claude Code's recap, Claude's live status, and your queries, newest first, with time, duration, tokens and tools. The ⋯ menu shows or hides the title, context, recap and queries; the recap and queries also fold.
 - **Query pages:** click a query to open it beside the terminal: your prompt, what Claude did along the way, and its answer.
 
 ## Install
@@ -60,6 +60,7 @@ The sections fill in after Claude's next reply.
 ## Good to know
 
 - **Which conversation:** Session follows the focused terminal. Clicking a pane that isn't a terminal (like a query page) keeps the conversation it showed, as long as it's in the same space.
+- **Renaming:** it saves the name the way `/rename` does, so `/resume` lists it. The running Claude Code isn't told: its own window title keeps the old name until you resume the conversation, and a conversation already renamed with `/rename` can go back to that name later.
 - **Recap:** Claude Code writes one when you come back to a session after a while, so not every conversation has one, and it can be behind: it says how many queries came after it, in amber from 10.
 - **Collapsed sidebar:** under 160 px, Usage and Session shrink to a small stack for each number: a five-segment bar, the percentage and a label (`5h`, `7d`, `ctx`). Hover one for the details.
 - **Limits:** Claude Code only reports them for Pro, Max and Ultra subscribers, or behind a Claude apps gateway with a spend limit. Otherwise Usage stays empty.

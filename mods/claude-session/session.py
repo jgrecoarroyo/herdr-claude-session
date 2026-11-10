@@ -4,13 +4,14 @@
   session.py <terminal>[,<terminal>…] JSON for the first of them running Claude Code: terminal,
                                      session, context, limits, cost, prompts (oldest first)
   session.py <terminal> --exchange N writes prompt N and its replies as a page, prints the path
+  session.py <terminal> --rename TITLE names the conversation, as Claude Code's /rename does
 
 Which conversation: each Claude Code process has HC_TERMINAL_ID=<terminal> in its
 environment and a ~/.claude/sessions/<pid>.json naming its session. Context and cost come
 from the snapshot snapshot.py (the status line) saves after every reply
 (~/.cache/claude-statusline/<session>.json). Prompts come from the transcript, read
 only from where the last run stopped (it grows to many MB).
-Reads local files only; sends nothing anywhere. What it keeps holds your conversation, so it
+Reads local files only; sends nothing anywhere. The one write to Claude Code's files is --rename. What it keeps holds your conversation, so it
 goes in ~/.cache/herdr-claude-session, readable only by you.
 These files are Claude Code's own and undocumented: if its format changes, prompts can go missing.
 """
@@ -20,7 +21,7 @@ HOME = os.path.expanduser("~")
 CACHE = os.path.join(HOME, ".cache", "herdr-claude-session")
 SNAPSHOTS = os.path.join(HOME, ".cache", "claude-statusline")
 EXCHANGES = os.path.join(CACHE, "pages")
-VERSION = 5
+VERSION = 6
 
 
 def terminals_of(pids):
@@ -127,7 +128,7 @@ def read(path, sid):
     """Prompts and their turns, continuing from the cached position in the transcript."""
     os.makedirs(CACHE, exist_ok=True)
     cache = os.path.join(CACHE, sid + ".json")
-    state = {"version": VERSION, "offset": 0, "prompts": [], "title": None, "compactions": 0, "recap": None}
+    state = {"version": VERSION, "offset": 0, "prompts": [], "title": None, "custom": None, "compactions": 0, "recap": None}
     try:
         with open(cache, encoding="utf-8") as f:
             old = json.load(f)
@@ -149,6 +150,8 @@ def read(path, sid):
             kind = d.get("type")
             if kind == "ai-title":
                 state["title"] = d.get("aiTitle") or state["title"]
+            elif kind == "custom-title":
+                state["custom"] = d.get("customTitle") or None  # a name you gave it: wins over Claude's
             elif kind == "system" and d.get("subtype") == "away_summary" and isinstance(d.get("content"), str):
                 # Claude Code's own recap, written when you come back to the session after a while.
                 state["recap"] = {"text": d["content"].strip(), "at": d.get("timestamp")}
@@ -209,7 +212,7 @@ def transcript_path(info, snap):
 def main():
     os.umask(0o077)  # what this writes holds the conversation: only you can read it
     if len(sys.argv) < 2:
-        print(json.dumps({"error": "usage: session.py <terminal> [--exchange N]"}))
+        print(json.dumps({"error": "usage: session.py <terminal> [--exchange N | --rename TITLE]"}))
         return
     terminal, info = session_for([t for t in sys.argv[1].split(",") if t])
     if not info:
@@ -223,6 +226,26 @@ def main():
         snap = {}
     path = transcript_path(info, snap)
     state = read(path, sid) if os.path.exists(path) else {"prompts": [], "title": None, "compactions": 0}
+
+    if len(sys.argv) >= 4 and sys.argv[2] == "--rename":
+        title = " ".join(sys.argv[3].split())
+        if not title or not os.path.exists(path):
+            print(json.dumps({"error": "no title" if not title else "no transcript"}))
+            return
+        # What /rename writes: a record at the end of the transcript, and a note beside it that
+        # /resume reads. The running Claude Code doesn't hear of it: its own window title stays.
+        line = json.dumps({"type": "custom-title", "customTitle": title, "sessionId": sid}, ensure_ascii=False, separators=(",", ":"))
+        fd = os.open(path, os.O_WRONLY | os.O_APPEND)
+        try:
+            os.write(fd, (line + "\n").encode("utf-8"))  # one write: it can't land inside a line Claude Code writes
+        finally:
+            os.close(fd)
+        side = os.path.join(os.path.dirname(path), sid)
+        os.makedirs(side, exist_ok=True)
+        with open(os.path.join(side, "custom-title.json"), "w", encoding="utf-8") as f:
+            json.dump({"customTitle": title}, f, ensure_ascii=False)
+        print(json.dumps({"title": title}))
+        return
 
     if len(sys.argv) >= 4 and sys.argv[2] == "--exchange":
         n = int(sys.argv[3])
@@ -272,7 +295,7 @@ def main():
     cost = snap.get("cost") or {}
     print(json.dumps({
         "terminal": terminal,
-        "session": {"id": sid, "name": info.get("name"), "title": state.get("title"), "cwd": info.get("cwd"),
+        "session": {"id": sid, "name": info.get("name"), "title": state.get("custom") or state.get("title"), "cwd": info.get("cwd"),
                     "status": info.get("status"), "model": (snap.get("model") or {}).get("display_name"),
                     "version": snap.get("version") or info.get("version"), "effort": snap.get("effort")},
         "context": {"pct": ctx.get("used_percentage"), "size": ctx.get("context_window_size"), "used": used or None,
