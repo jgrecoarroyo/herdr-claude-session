@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """The Claude Code conversation running in a Herdr terminal, for the Session panel.
 
-  session.py <terminal>              JSON: session, context, limits, cost, prompts (oldest first)
+  session.py <terminal>[,<terminal>…] JSON for the first of them running Claude Code: terminal,
+                                     session, context, limits, cost, prompts (oldest first)
   session.py <terminal> --exchange N writes prompt N and its replies as a page, prints the path
 
 Which conversation: each Claude Code process has HC_TERMINAL_ID=<terminal> in its
@@ -19,33 +20,56 @@ HOME = os.path.expanduser("~")
 CACHE = os.path.join(HOME, ".cache", "herdr-claude-session")
 SNAPSHOTS = os.path.join(HOME, ".cache", "claude-statusline")
 EXCHANGES = os.path.join(CACHE, "pages")
-VERSION = 4
+VERSION = 5
 
 
-def environment_of(pid):
-    """A process's environment as one line: /proc on Linux, ps on macOS."""
-    try:
-        with open(f"/proc/{pid}/environ", "rb") as f:
-            return f.read().replace(b"\0", b" ").decode(errors="replace")
-    except OSError:
-        return subprocess.run(["ps", "eww", "-o", "command=", "-p", str(pid)], capture_output=True, text=True).stdout
+def terminals_of(pids):
+    """Each process's HC_TERMINAL_ID (the Herdr terminal it runs in): /proc on Linux, else one ps for all."""
+    found, rest = {}, []
+    for pid in pids:
+        try:
+            with open(f"/proc/{pid}/environ", "rb") as f:
+                env = f.read().decode(errors="replace").split("\0")
+            found[pid] = next((v[len("HC_TERMINAL_ID="):] for v in env if v.startswith("HC_TERMINAL_ID=")), None)
+        except OSError:
+            rest.append(pid)
+    if rest:
+        out = subprocess.run(["ps", "eww", "-o", "pid=,command=", "-p", ",".join(map(str, rest))], capture_output=True, text=True).stdout
+        for line in out.splitlines():
+            pid, _, env = line.strip().partition(" ")
+            m = re.search(r"\bHC_TERMINAL_ID=(\S+)", env)
+            if pid.isdigit() and m:
+                found[int(pid)] = m.group(1)
+    return found
 
 
-def session_for(terminal):
+def session_for(terminals):
+    """The first of these terminals that runs Claude Code, and its session."""
+    found = sessions_by_terminal()
+    for terminal in terminals:
+        if terminal in found:
+            return terminal, found[terminal]
+    return None, None
+
+
+def sessions_by_terminal():
     folder = os.path.join(HOME, ".claude", "sessions")
-    best = None
+    infos = []
     for name in os.listdir(folder) if os.path.isdir(folder) else []:
         if not name.endswith(".json"):
             continue
         try:
             with open(os.path.join(folder, name), encoding="utf-8") as f:
                 info = json.load(f)
-            env = environment_of(int(info["pid"]))
+            infos.append((int(info["pid"]), info))
         except Exception:
             continue
-        if f"HC_TERMINAL_ID={terminal} " in env + " ":
-            if best is None or info.get("updatedAt", 0) > best.get("updatedAt", 0):
-                best = info
+    where = terminals_of([pid for pid, _ in infos])
+    best = {}
+    for pid, info in infos:
+        terminal = where.get(pid)
+        if terminal and (terminal not in best or info.get("updatedAt", 0) > best[terminal].get("updatedAt", 0)):
+            best[terminal] = info
     return best
 
 
@@ -103,7 +127,7 @@ def read(path, sid):
     """Prompts and their turns, continuing from the cached position in the transcript."""
     os.makedirs(CACHE, exist_ok=True)
     cache = os.path.join(CACHE, sid + ".json")
-    state = {"version": VERSION, "offset": 0, "prompts": [], "title": None, "compactions": 0}
+    state = {"version": VERSION, "offset": 0, "prompts": [], "title": None, "compactions": 0, "recap": None}
     try:
         with open(cache, encoding="utf-8") as f:
             old = json.load(f)
@@ -125,6 +149,9 @@ def read(path, sid):
             kind = d.get("type")
             if kind == "ai-title":
                 state["title"] = d.get("aiTitle") or state["title"]
+            elif kind == "system" and d.get("subtype") == "away_summary" and isinstance(d.get("content"), str):
+                # Claude Code's own recap, written when you come back to the session after a while.
+                state["recap"] = {"text": d["content"].strip(), "at": d.get("timestamp")}
             elif kind == "system" and d.get("subtype") == "compact_boundary":
                 state["compactions"] += 1
             elif kind == "system" and d.get("subtype") == "turn_duration" and prompts:
@@ -162,6 +189,16 @@ def read(path, sid):
     return state
 
 
+def recap(state):
+    """The latest recap, with how many queries were sent after it (so you can tell it's behind)."""
+    r = state.get("recap")
+    if not r:
+        return None
+    # Claude Code ends some with a hint about its own setting: not part of the recap.
+    text = re.sub(r"\s*\(disable recaps in /config\)\s*$", "", r.get("text") or "")
+    return r | {"text": text, "since": sum(1 for p in state["prompts"] if (p.get("at") or "") > (r.get("at") or ""))}
+
+
 def transcript_path(info, snap):
     if snap.get("transcript_path") and os.path.exists(snap["transcript_path"]):
         return snap["transcript_path"]
@@ -174,7 +211,7 @@ def main():
     if len(sys.argv) < 2:
         print(json.dumps({"error": "usage: session.py <terminal> [--exchange N]"}))
         return
-    info = session_for(sys.argv[1])
+    terminal, info = session_for([t for t in sys.argv[1].split(",") if t])
     if not info:
         print(json.dumps({"none": True}))
         return
@@ -234,6 +271,7 @@ def main():
     used = sum(usage.get(k) or 0 for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
     cost = snap.get("cost") or {}
     print(json.dumps({
+        "terminal": terminal,
         "session": {"id": sid, "name": info.get("name"), "title": state.get("title"), "cwd": info.get("cwd"),
                     "status": info.get("status"), "model": (snap.get("model") or {}).get("display_name"),
                     "version": snap.get("version") or info.get("version"), "effort": snap.get("effort")},
@@ -241,6 +279,7 @@ def main():
                     "compactions": state.get("compactions", 0)},
         "cost": {"usd": cost.get("total_cost_usd"), "added": cost.get("total_lines_added"), "removed": cost.get("total_lines_removed"),
                  "ms": cost.get("total_duration_ms")},
+        "recap": recap(state),
         "snapshot": os.path.getmtime(os.path.join(SNAPSHOTS, sid + ".json")) if snap else None,
         "prompts": [{k: p[k] for k in ("n", "at", "ms", "done", "out", "tools")} | {"text": p["text"][:400]} for p in state["prompts"]],
     }))

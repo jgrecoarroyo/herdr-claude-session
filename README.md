@@ -1,8 +1,9 @@
 # Claude Code Usage & History for Herdr
 
-See your Claude Code conversation at a glance in [Herdr](https://herdr.dev)'s sidebar: how full the
-context is, how close you are to your limits, and every query you sent. Click a query to read what
-Claude did and answered, without scrolling the terminal.
+See your Claude Code conversation at a glance in [Herdr](https://herdr.dev)'s sidebar: its title,
+Claude's own recap of where it stands, how full the context is, how close you are to your limits,
+and every query you sent. Click a query to read what Claude did and answered, without scrolling the
+terminal.
 
 ![Usage and Session in the sidebar, with a query page open beside them](preview.png)
 
@@ -11,7 +12,7 @@ It only reads files on your computer, so it uses no tokens and sends nothing any
 ## What you get
 
 - **Usage:** your 5-hour and weekly limits, and when they reset. The weekly bar has a segment per day, so you can see if you're ahead of an even pace.
-- **Session:** context, model and cost, Claude's live status, and your queries, newest first, with time, duration, tokens and tools.
+- **Session:** the conversation's title, context, model and cost, Claude Code's recap, Claude's live status, and your queries, newest first, with time, duration, tokens and tools. The ⋯ menu shows or hides the title, context, recap and queries; the recap and queries also fold.
 - **Query pages:** click a query to open it beside the terminal: your prompt, what Claude did along the way, and its answer.
 
 ## Install
@@ -58,6 +59,8 @@ The sections fill in after Claude's next reply.
 
 ## Good to know
 
+- **Which conversation:** Session follows the focused terminal. Clicking a pane that isn't a terminal (like a query page) keeps the conversation it showed, as long as it's in the same space.
+- **Recap:** Claude Code writes one when you come back to a session after a while, so not every conversation has one, and it can be behind: it says how many queries came after it, in amber from 10.
 - **Collapsed sidebar:** under 160 px, Usage and Session shrink to a small stack for each number: a five-segment bar, the percentage and a label (`5h`, `7d`, `ctx`). Hover one for the details.
 - **Limits:** Claude Code only reports them for Pro, Max and Ultra subscribers, or behind a Claude apps gateway with a spend limit. Otherwise Usage stays empty.
 - **Platforms:** tested on macOS. Linux should work but hasn't been tested. Windows isn't supported.
